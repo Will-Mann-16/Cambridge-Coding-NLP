@@ -8,6 +8,7 @@ TIME_KEYWORDS = ['when']
 MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 
 TIME_SEARCH_PARAMS = ['created', 'built', 'born', 'erected']
+TIME_DAY_KEYWORDS = ['until', 'year', 'in']
 
 def read_input():
     input_data = input("> ")
@@ -34,14 +35,17 @@ def find_data(nouns, verbs, keywords):
         for keyword in keywords:
             if keyword.lemma_ in TIME_KEYWORDS:
                 output = find_dates(summary)
-                min_date = False
-                max_date = False
-                for date in output:
-                    if min_date == False or date < min_date:
-                        min_date = date
-                    if max_date == False or date > max_date:
-                        max_date = date
-                output = "Created/Born: " + min_date.isoformat() + "\nRemoved/Died: " + max_date.isoformat()
+                min_date = None
+                max_date = None
+                if output != None:
+                    for date in output:
+                        if min_date == None or date < min_date:
+                            min_date = date
+                        if max_date == None or date > max_date:
+                            max_date = date
+                    output = "Created/Born: " + min_date.isoformat() + "\nRemoved/Died: " + max_date.isoformat()
+                else:
+                    output = "No dates could be found."
         print(output)
         print(summary)
     except wikipedia.PageError:
@@ -52,8 +56,15 @@ def find_dates(summary):
     results = []
     for i, word in enumerate(doc):
         if word.lemma_ in MONTHS:
-            if doc[i - 1].lemma_ != 'in':
-                results.append(datetime.date(int(doc[i + 1].lemma_), MONTHS.index(doc[i].lemma_) + 1, int(doc[i - 1].lemma_)))
+            try:
+                if doc[i - 1].lemma_ not in  TIME_DAY_KEYWORDS:
+                    results.append(datetime.date(int(doc[i + 1].lemma_), MONTHS.index(doc[i].lemma_) + 1, int(doc[i - 1].lemma_)))
+                else:
+                    results.append(datetime.date(int(doc[i + 1].lemma_), MONTHS.index(doc[i].lemma_) + 1, 1))
+            except ValueError as ex:
+                return None
+    if results == []:
+        return None
     return results
 if __name__ == "__main__":
     while True:
